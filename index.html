@@ -288,6 +288,7 @@ function botThink(p) {
 
 // ---------- Alur permainan ----------
 function startGame() {
+  S.now = performance.now() / 1000;
   fx = []; events = []; numCounter = 0; players = [];
   T = { period: 2.2, cycleStart: S.now - 1.1 };
   K = { level: 0, rounds: 0, round: null, nextAt: 0 };
@@ -298,6 +299,7 @@ function startGame() {
   renderBoard(); updateHud();
 }
 function beginPlay() {
+  S.now = performance.now() / 1000;
   S.phase = 'play'; S.start = S.now; $('#msg').textContent = '';
   T.cycleStart = S.now - 0.2; T.period = 2.2;          // putaran pertama: ±2 detik untuk bersiap
   K.nextAt = S.now + 1.5; B.nextSpawn = S.now + 1.5;

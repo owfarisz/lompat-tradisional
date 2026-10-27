@@ -2,15 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>LOMPAT! – Filter Lompat Tradisional</title>
 <style>
   :root { --bg:#0f1115; --card:#1a1d24; --line:#2c313b; --text:#f3f4f6; --muted:#9aa3b2; --acc:#f59e0b; --ok:#22c55e; --bad:#ef4444; }
   * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; }
-  #video { display:none; }
-  #cv { position:fixed; inset:0; display:block; }
-  #hud { position:fixed; top:12px; left:12px; right:12px; display:flex; gap:10px; align-items:center; pointer-events:none; flex-wrap:wrap; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
+  /* video tetap "terlihat" (bukan display:none) agar Safari iOS terus memperbarui frame-nya */
+  #video { position:fixed; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; }
+  #cv { position:fixed; inset:0; display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #hud { position:fixed; top:max(12px, env(safe-area-inset-top)); left:max(12px, env(safe-area-inset-left)); right:max(12px, env(safe-area-inset-right)); display:flex; gap:10px; align-items:center; pointer-events:none; flex-wrap:wrap; }
   .pill { background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-weight:700; font-size:16px; backdrop-filter:blur(4px); }
   #hud .grow { flex:1; }
   #board { position:fixed; top:64px; right:12px; background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:14px; padding:10px 12px; min-width:170px; pointer-events:none; font-size:15px; }
@@ -21,9 +22,10 @@
   #board .sc { margin-left:auto; }
   #msg { position:fixed; left:50%; top:16%; transform:translateX(-50%); text-align:center; font-size:22px; font-weight:700; background:rgba(15,17,21,.8); border:1px solid var(--line); padding:12px 20px; border-radius:14px; max-width:90vw; pointer-events:none; }
   #msg:empty { display:none; }
-  .overlay { position:fixed; inset:0; background:rgba(10,11,14,.92); display:flex; align-items:center; justify-content:center; padding:16px; overflow:auto; }
+  /* margin:auto (bukan align-items:center) supaya menu yang lebih tinggi dari layar HP tetap bisa di-scroll dari atas */
+  .overlay { position:fixed; inset:0; background:rgba(10,11,14,.92); display:flex; padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); overflow:auto; -webkit-overflow-scrolling:touch; }
   .hidden { display:none !important; }
-  .panel { width:min(980px,100%); }
+  .panel { width:min(980px,100%); margin:auto; }
   h1 { font-size:44px; margin:0 0 4px; letter-spacing:1px; }
   h1 span { color:var(--acc); }
   .sub { color:var(--muted); margin:0 0 22px; font-size:16px; line-height:1.5; }
@@ -47,7 +49,15 @@
   #rank .r { display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:18px; font-weight:700; }
   #rank .dot { width:14px; height:14px; border-radius:50%; }
   #rank .sc { margin-left:auto; font-size:22px; }
-  @media (max-width:600px){ h1{font-size:32px;} .pill{font-size:13px;padding:6px 10px;} #msg{font-size:17px;} #board{font-size:13px;min-width:130px;} }
+  @media (max-width:600px){
+    h1{font-size:32px;} .sub{font-size:15px;}
+    #hud{gap:6px;} .pill{font-size:12px;padding:5px 9px;} .kb{display:none;}
+    #msg{font-size:15px;padding:10px 14px;}
+    #board{font-size:12px;min-width:0;padding:6px 9px;right:max(8px, env(safe-area-inset-right));}
+    .seg{width:100%;} .seg button{flex:1;padding:12px 8px;font-size:14px;}
+    .btn{width:100%;} .row{gap:10px;}
+    #rank .r{font-size:16px;}
+  }
 </style>
 </head>
 <body>
@@ -59,7 +69,7 @@
   <div class="pill" id="hPlayers"></div>
   <div class="pill" id="hLevel"></div>
   <div class="grow"></div>
-  <div class="pill" style="pointer-events:auto;cursor:pointer" id="hMenu">☰ Menu (Esc)</div>
+  <div class="pill" style="pointer-events:auto;cursor:pointer" id="hMenu">☰ Menu<span class="kb"> (Esc)</span></div>
 </div>
 <div id="board"></div>
 <div id="msg"></div>
@@ -89,14 +99,14 @@
     </div>
     <div class="row">
       <div class="seg" id="inputSeg">
-        <button class="sel" data-input="camera">📷 Kamera (multi-pemain)</button>
-        <button data-input="demo">⌨️ Demo (kamu + 2 bot)</button>
+        <button class="sel" data-input="camera">📷 Kamera<span class="kb"> (multi-pemain)</span></button>
+        <button data-input="demo">🎮 Demo (kamu + 2 bot)</button>
       </div>
       <button class="btn" id="startBtn">Mulai ▶</button>
       <span id="status"></span>
     </div>
     <p class="note">Tips kamera: taruh laptop/HP rendah, mundur ±2–4 meter sampai <b>seluruh badan sampai kaki</b> semua pemain terlihat, beri jarak antarpemain, dan pastikan ruangan terang.
-      Pemain baru boleh masuk frame kapan saja. Mode demo: tekan <b>Spasi</b> atau klik/tap layar untuk melompat sebagai P1.
+      Pemain baru boleh masuk frame kapan saja. Di HP, berdirikan HP (bisa portrait) dan pakai kamera depan. Mode demo: <b>tap layar</b> (atau tekan Spasi di laptop) untuk melompat sebagai P1.
       Teknologi: MediaPipe Pose Landmarker (33 titik tubuh per orang, hingga 6 orang) yang berjalan langsung di browser, tanpa server.</p>
   </div>
 </div>
@@ -123,8 +133,15 @@ function resize() {
   cv.width = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineJoin = 'round';   // tanpa ini garis tepi teks tebal memunculkan "duri" di sudut huruf
 }
 addEventListener('resize', resize); resize();
+// skala UI di canvas: 1 di laptop, mengecil di layar HP
+const ui = () => Math.max(0.62, Math.min(1, Math.min(W, H) / 700));
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h) { this.rect(x, y, w, h); };
+}
 
 // ---------- Konfigurasi ----------
 const MODES = { tali: '🪢 Lompat Tali', karet: '🎗️ Lompat Karet', batu: '🪨 Lompat Batu' };
@@ -257,8 +274,8 @@ const eligible = (p, t) => p.confirmed && p.lives > 0 && p.joinedAt < t - 1.5;
 // ---------- Mode demo (kamu + 2 bot) ----------
 function setupDemo() {
   players = []; numCounter = 0;
-  [[0.5, false], [0.22, true], [0.78, true]].forEach(([fx, isBot]) => {
-    const bh = H * 0.36, base = H * 0.88;
+  [[0.5, false], [0.2, true], [0.8, true]].forEach(([fx, isBot]) => {
+    const bh = demoBodyH(), base = H * 0.88;
     const p = newPlayer({ x: W * fx, foot: base, hip: base - bh * 0.5, sh: base - bh, lm: null });
     p.bot = { y: 0, vy: 0, auto: isBot, fx, delay: 0 };
     confirm(p); p.joinedAt = S.now - 5;
@@ -266,9 +283,10 @@ function setupDemo() {
   });
 }
 function botJump(p) { if (p.bot.y <= 0.5) p.bot.vy = 2.2 * p.bodyH; }
+const demoBodyH = () => Math.min(H * 0.36, W * 0.42);   // di layar sempit (portrait) stickman diperkecil agar tidak bertabrakan
 function updateDemo(dt) {
   for (const p of players) {
-    const b = p.bot, bh = H * 0.36, base = H * 0.88;
+    const b = p.bot, bh = demoBodyH(), base = H * 0.88;
     p.bodyH = bh; p.x = W * b.fx;
     if (b.auto && S.phase === 'play' && p.lives > 0) botThink(p);
     b.vy -= 8 * bh * dt; b.y = Math.max(0, b.y + b.vy * dt); if (b.y === 0) b.vy = 0;
@@ -437,7 +455,7 @@ function loop(nowMs) {
       else {
         if (!S.lobbyAt) S.lobbyAt = S.now + 5;
         const left = Math.ceil(S.lobbyAt - S.now);
-        msg.textContent = `${ready.length} pemain terdeteksi ✔ · Mulai dalam ${left}… (tekan Enter untuk langsung mulai)`;
+        msg.textContent = `${ready.length} pemain terdeteksi ✔ · Mulai dalam ${left}… (${TOUCH ? 'tap layar' : 'tekan Enter'} untuk langsung mulai)`;
         if (S.now >= S.lobbyAt) beginPlay();
       }
     } else if (S.phase === 'play') {
@@ -473,8 +491,21 @@ function span(arr) {
   return { x0: Math.max(16, xmin - m), x1: Math.min(W - 16, xmax + m), avgBh };
 }
 
+// posisi teks besar: di bawah HUD & papan skor supaya tidak bertumpuk (penting di HP)
+let labelY = 110;
+function measureOverlay() {
+  let bottom = 0;
+  for (const id of ['#hud', '#board']) {
+    const el = $(id);
+    if (el.classList.contains('hidden') || !el.innerHTML.trim()) continue;
+    bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+  }
+  labelY = bottom + 44 * ui();
+}
+
 function draw(dt) {
   ctx.clearRect(0, 0, W, H);
+  measureOverlay();
   if (S.input === 'camera' && camReady && S.phase !== 'menu') {
     const r = videoRect();
     ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
@@ -501,7 +532,7 @@ function draw(dt) {
   for (const f of fx) {
     f.t += dt;
     ctx.globalAlpha = Math.max(0, 1 - f.t / 1.1);
-    ctx.font = '900 38px system-ui,sans-serif'; ctx.textAlign = 'center';
+    ctx.font = `900 ${Math.round(38 * ui())}px system-ui,sans-serif`; ctx.textAlign = 'center';
     ctx.strokeStyle = 'rgba(0,0,0,.65)'; ctx.lineWidth = 6; ctx.fillStyle = f.color;
     const y = Math.max(60, f.y) - f.t * 60;
     ctx.strokeText(f.text, f.x, y); ctx.fillText(f.text, f.x, y);
@@ -547,20 +578,20 @@ function drawStickman(p) {
 
 // label di atas kepala: nomor, nyawa, skor + meter tinggi lompatan vs yang dibutuhkan
 function drawTag(p) {
-  const y = Math.max(40, p.footY - p.bodyH * 1.3), x = p.x;
-  ctx.font = '800 18px system-ui,sans-serif'; ctx.textAlign = 'center';
+  const k = ui(), y = Math.max(40, p.footY - p.bodyH * 1.3), x = p.x;
+  ctx.font = `800 ${Math.round(18 * k)}px system-ui,sans-serif`; ctx.textAlign = 'center';
   const txt = `P${p.num}  ${p.lives > 0 ? '❤'.repeat(p.lives) : '✖'}  ${p.score}`;
-  const w = ctx.measureText(txt).width + 20;
-  ctx.fillStyle = 'rgba(15,17,21,.75)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - 22, w, 30, 10); ctx.fill();
+  const w = ctx.measureText(txt).width + 20 * k;
+  ctx.fillStyle = 'rgba(15,17,21,.75)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - 22 * k, w, 30 * k, 10 * k); ctx.fill();
   ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = '#fff'; ctx.fillText(txt, x, y);
   if (p.lives <= 0 || S.phase !== 'play') return;
-  const req = needFor(p), maxF = 0.3, bw = 70;
+  const req = needFor(p), maxF = 0.3, bw = 70 * k, by = y + 12 * k;
   const lf = Math.max(0, p.lift / p.bodyH);
-  ctx.fillStyle = 'rgba(15,17,21,.75)'; ctx.fillRect(x - bw / 2, y + 12, bw, 8);
-  ctx.fillStyle = lf >= req ? '#22c55e' : '#38bdf8'; ctx.fillRect(x - bw / 2, y + 12, bw * Math.min(1, lf / maxF), 8);
-  ctx.fillStyle = '#f59e0b'; ctx.fillRect(x - bw / 2 + bw * (req / maxF) - 1.5, y + 9, 3, 14);
-  if (S.mode === 'karet' && K.round && p.karetOk) { ctx.fillStyle = '#22c55e'; ctx.font = '900 26px system-ui'; ctx.fillText('✔', x + w / 2 + 16, y); }
+  ctx.fillStyle = 'rgba(15,17,21,.75)'; ctx.fillRect(x - bw / 2, by, bw, 8 * k);
+  ctx.fillStyle = lf >= req ? '#22c55e' : '#38bdf8'; ctx.fillRect(x - bw / 2, by, bw * Math.min(1, lf / maxF), 8 * k);
+  ctx.fillStyle = '#f59e0b'; ctx.fillRect(x - bw / 2 + bw * (req / maxF) - 1.5, by - 3 * k, 3, 14 * k);
+  if (S.mode === 'karet' && K.round && p.karetOk) { ctx.fillStyle = '#22c55e'; ctx.font = `900 ${Math.round(26 * k)}px system-ui`; ctx.fillText('✔', x + w / 2 + 14 * k, y); }
 }
 function needFor(p) {
   if (S.mode === 'tali') return REQ_TALI;
@@ -613,14 +644,14 @@ function drawKaret(R) {
     ctx.beginPath(); ctx.moveTo(a, yAt(a)); ctx.lineTo(b, yAt(b)); ctx.stroke();
   }
   ctx.lineCap = 'round';
-  ctx.fillStyle = '#fff'; ctx.font = '700 15px system-ui,sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText(`Karet Level ${K.level + 1}`, Math.min(x1 + 10, W - 110), yAt(x1) - 12);
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(15 * ui())}px system-ui,sans-serif`; ctx.textAlign = 'right';
+  ctx.fillText(`Karet Level ${K.level + 1}`, x1 - 8, yAt(x1) - 12);
   if (K.round) {
     const left = Math.max(0, K.round.end - S.now);
     bigLabel(`LOMPATI KARETNYA!  ${Math.ceil(left)}`, '#facc15');
-    const bw = Math.min(360, W * 0.6);
-    ctx.fillStyle = 'rgba(15,17,21,.7)'; ctx.fillRect(W / 2 - bw / 2, 128, bw, 10);
-    ctx.fillStyle = left > 1.5 ? '#22c55e' : '#ef4444'; ctx.fillRect(W / 2 - bw / 2, 128, bw * left / KARET_ROUND, 10);
+    const bw = Math.min(360, W * 0.6), barY = labelY + 16 * ui();
+    ctx.fillStyle = 'rgba(15,17,21,.7)'; ctx.fillRect(W / 2 - bw / 2, barY, bw, 10);
+    ctx.fillStyle = left > 1.5 ? '#22c55e' : '#ef4444'; ctx.fillRect(W / 2 - bw / 2, barY, bw * left / KARET_ROUND, 10);
   } else bigLabel('Bersiap… karet dipasang', '#fff');
 }
 
@@ -645,9 +676,13 @@ function drawStones(R) {
 }
 
 function bigLabel(t, color) {
-  ctx.font = '900 40px system-ui,sans-serif'; ctx.textAlign = 'center';
-  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t, W / 2, 110);
-  ctx.fillStyle = color; ctx.fillText(t, W / 2, 110);
+  let size = Math.round(40 * ui());
+  ctx.font = `900 ${size}px system-ui,sans-serif`;
+  const fit = (W - 32) / ctx.measureText(t).width;          // kecilkan sampai muat di lebar layar
+  if (fit < 1) { size = Math.floor(size * fit); ctx.font = `900 ${size}px system-ui,sans-serif`; }
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t, W / 2, labelY);
+  ctx.fillStyle = color; ctx.fillText(t, W / 2, labelY);
 }
 
 // ---------- Suara ----------
@@ -680,7 +715,9 @@ $('#startBtn').onclick = async () => {
 $('#againBtn').onclick = startGame;
 $('#menuBtn').onclick = toMenu;
 $('#hMenu').onclick = toMenu;
-function humanJump() { if (S.input === 'demo' && S.phase === 'play') { const p = players.find(q => !q.bot.auto); if (p && p.lives > 0) botJump(p); } }
+function humanJump() {
+  if (S.phase === 'lobby' && active().length) { beginPlay(); return; }
+  if (S.input === 'demo' && S.phase === 'play') { const p = players.find(q => !q.bot.auto); if (p && p.lives > 0) botJump(p); } }
 addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); humanJump(); }
   if (e.code === 'Enter' && S.phase === 'lobby' && active().length) beginPlay();

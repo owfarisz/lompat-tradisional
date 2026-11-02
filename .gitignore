@@ -1,3 +1,6 @@
 *.pdf
 .vercel
 .DS_Store
+.venv*
+__pycache__/
+models/

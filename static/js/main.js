@@ -1,129 +1,8 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>LOMPAT! – Filter Lompat Tradisional</title>
-<style>
-  :root { --bg:#0f1115; --card:#1a1d24; --line:#2c313b; --text:#f3f4f6; --muted:#9aa3b2; --acc:#f59e0b; --ok:#22c55e; --bad:#ef4444; }
-  * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
-  /* video tetap "terlihat" (bukan display:none) agar Safari iOS terus memperbarui frame-nya */
-  #video { position:fixed; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; }
-  #cv { position:fixed; inset:0; display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
-  #hud { position:fixed; top:max(12px, env(safe-area-inset-top)); left:max(12px, env(safe-area-inset-left)); right:max(12px, env(safe-area-inset-right)); display:flex; gap:10px; align-items:center; pointer-events:none; flex-wrap:wrap; }
-  .pill { background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-weight:700; font-size:16px; backdrop-filter:blur(4px); }
-  #hud .grow { flex:1; }
-  #board { position:fixed; top:64px; right:12px; background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:14px; padding:10px 12px; min-width:170px; pointer-events:none; font-size:15px; }
-  #board:empty { display:none; }
-  #board .r { display:flex; gap:8px; align-items:center; padding:3px 0; font-weight:700; }
-  #board .r.dead { opacity:.4; text-decoration:line-through; }
-  #board .dot { width:12px; height:12px; border-radius:50%; flex:none; }
-  #board .sc { margin-left:auto; }
-  #msg { position:fixed; left:50%; top:16%; transform:translateX(-50%); text-align:center; font-size:22px; font-weight:700; background:rgba(15,17,21,.8); border:1px solid var(--line); padding:12px 20px; border-radius:14px; max-width:90vw; pointer-events:none; }
-  #msg:empty { display:none; }
-  /* margin:auto (bukan align-items:center) supaya menu yang lebih tinggi dari layar HP tetap bisa di-scroll dari atas */
-  .overlay { position:fixed; inset:0; background:rgba(10,11,14,.92); display:flex; padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); overflow:auto; -webkit-overflow-scrolling:touch; }
-  .hidden { display:none !important; }
-  .panel { width:min(980px,100%); margin:auto; }
-  h1 { font-size:44px; margin:0 0 4px; letter-spacing:1px; }
-  h1 span { color:var(--acc); }
-  .sub { color:var(--muted); margin:0 0 22px; font-size:16px; line-height:1.5; }
-  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
-  .card { background:var(--card); border:2px solid var(--line); border-radius:16px; padding:16px; cursor:pointer; text-align:left; color:var(--text); font:inherit; }
-  .card.sel { border-color:var(--acc); box-shadow:0 0 0 3px rgba(245,158,11,.2); }
-  .card .ic { font-size:34px; }
-  .card h3 { margin:6px 0 6px; font-size:19px; }
-  .card p { margin:0; color:var(--muted); font-size:14px; line-height:1.45; }
-  .card .rule { margin-top:8px; color:var(--text); font-size:13px; }
-  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:20px; }
-  .seg { display:flex; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-  .seg button { background:none; border:0; color:var(--muted); padding:12px 16px; font:inherit; font-weight:600; cursor:pointer; }
-  .seg button.sel { background:var(--acc); color:#111; }
-  .btn { background:var(--acc); color:#111; border:0; border-radius:12px; padding:13px 26px; font:inherit; font-weight:800; font-size:17px; cursor:pointer; }
-  .btn.ghost { background:none; color:var(--text); border:1px solid var(--line); }
-  .note { color:var(--muted); font-size:13px; margin-top:14px; line-height:1.5; }
-  #status { color:var(--acc); font-weight:600; }
-  .center { text-align:center; }
-  #rank { margin:16px auto 6px; max-width:420px; text-align:left; }
-  #rank .r { display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:18px; font-weight:700; }
-  #rank .dot { width:14px; height:14px; border-radius:50%; }
-  #rank .sc { margin-left:auto; font-size:22px; }
-  @media (max-width:600px){
-    h1{font-size:32px;} .sub{font-size:15px;}
-    #hud{gap:6px;} .pill{font-size:12px;padding:5px 9px;} .kb{display:none;}
-    #msg{font-size:15px;padding:10px 14px;}
-    #board{font-size:12px;min-width:0;padding:6px 9px;right:max(8px, env(safe-area-inset-right));}
-    .seg{width:100%;} .seg button{flex:1;padding:12px 8px;font-size:14px;}
-    .btn{width:100%;} .row{gap:10px;}
-    #rank .r{font-size:16px;}
-  }
-</style>
-</head>
-<body>
-<video id="video" playsinline muted></video>
-<canvas id="cv"></canvas>
+import { CFG, MODES, COLORS, LIVES, REQ_TALI, KARET_LEVELS, KARET_ROUND } from './config.js';
+import { makeDetection, newTrack, assign, track, isJump, cleared } from './tracker.js';
+import { BrowserPose } from './pose-browser.js';
+import { ServerPose } from './pose-server.js';
 
-<div id="hud" class="hidden">
-  <div class="pill" id="hMode"></div>
-  <div class="pill" id="hPlayers"></div>
-  <div class="pill" id="hLevel"></div>
-  <div class="grow"></div>
-  <div class="pill" style="pointer-events:auto;cursor:pointer" id="hMenu">☰ Menu<span class="kb"> (Esc)</span></div>
-</div>
-<div id="board"></div>
-<div id="msg"></div>
-
-<div id="menu" class="overlay">
-  <div class="panel">
-    <h1>LOMPAT<span>!</span></h1>
-    <p class="sub">Filter kamera berbasis <b>computer vision</b> untuk permainan lompat tradisional Indonesia, bisa <b>dimainkan beramai-ramai (hingga 6 orang)</b>.
-      Berdiri di depan kamera, sistem mendeteksi kaki dan badan setiap pemain. Melompatlah saat objek virtual lewat:
-      <b style="color:var(--ok)">lolos = skor +1</b>, <b style="color:var(--bad)">kena = nyawa −1</b>.</p>
-    <div class="cards" id="cards">
-      <button class="card sel" data-mode="tali">
-        <div class="ic">🪢</div><h3>Lompat Tali</h3>
-        <p>Dimainkan di banyak daerah: dua orang memutar tali, pemain melompat setiap kali tali lewat di bawah kaki.</p>
-        <div class="rule">Tali virtual berputar melewati kaki semua pemain dan makin cepat. Lompat saat tali sampai di kaki (lingkaran mengecil = aba-aba).</div>
-      </button>
-      <button class="card" data-mode="karet">
-        <div class="ic">🎗️</div><h3>Lompat Karet</h3>
-        <p>Tali dari rangkaian karet gelang yang tingginya dinaikkan bertahap (mata kaki, lutut, pinggang, dst.).</p>
-        <div class="rule">Setiap ronde ada waktu 5 detik untuk melompati karet. Karet naik level setiap 2 ronde.</div>
-      </button>
-      <button class="card" data-mode="batu">
-        <div class="ic">🪨</div><h3>Lompat Batu</h3>
-        <p>Terinspirasi <i>Hombo Batu</i> (Fahombo) dari Nias, Sumatera Utara: pemuda melompati tumpukan batu setinggi ±2 meter.</p>
-        <div class="rule">Tumpukan batu datang dari samping, makin lama makin besar dan makin kencang.</div>
-      </button>
-    </div>
-    <div class="row">
-      <div class="seg" id="inputSeg">
-        <button class="sel" data-input="camera">📷 Kamera<span class="kb"> (multi-pemain)</span></button>
-        <button data-input="demo">🎮 Demo (kamu + 2 bot)</button>
-      </div>
-      <button class="btn" id="startBtn">Mulai ▶</button>
-      <span id="status"></span>
-    </div>
-    <p class="note">Tips kamera: taruh laptop/HP rendah, mundur ±2–4 meter sampai <b>seluruh badan sampai kaki</b> semua pemain terlihat, beri jarak antarpemain, dan pastikan ruangan terang.
-      Pemain baru boleh masuk frame kapan saja. Di HP, berdirikan HP (bisa portrait) dan pakai kamera depan. Mode demo: <b>tap layar</b> (atau tekan Spasi di laptop) untuk melompat sebagai P1.
-      Teknologi: MediaPipe Pose Landmarker (33 titik tubuh per orang, hingga 6 orang) yang berjalan langsung di browser, tanpa server.</p>
-  </div>
-</div>
-
-<div id="over" class="overlay hidden">
-  <div class="panel center">
-    <div style="font-size:30px;font-weight:800">🏆 Permainan selesai</div>
-    <div class="sub" id="oInfo" style="margin:6px 0 0"></div>
-    <div id="rank"></div>
-    <div class="row" style="justify-content:center">
-      <button class="btn" id="againBtn">Main lagi</button>
-      <button class="btn ghost" id="menuBtn">Pilih mode</button>
-    </div>
-  </div>
-</div>
-
-<script type="module">
 const $ = s => document.querySelector(s);
 const cv = $('#cv'), ctx = cv.getContext('2d'), video = $('#video');
 let W = 0, H = 0;
@@ -143,19 +22,9 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h) { this.rect(x, y, w, h); };
 }
 
-// ---------- Konfigurasi ----------
-const MODES = { tali: '🪢 Lompat Tali', karet: '🎗️ Lompat Karet', batu: '🪨 Lompat Batu' };
-const COLORS = ['#f59e0b', '#38bdf8', '#a3e635', '#f472b6', '#c084fc', '#2dd4bf', '#fb923c', '#f87171'];
-const MAX_POSES = 6;
-const LIVES = 3;
-const PRE = 0.25, POST = 0.18;   // jendela penilaian (detik) di sekitar momen objek lewat di kaki
-const GROUND_WIN = 1.2;          // lantai = posisi kaki terendah dalam 1,2 detik terakhir (ikut bergeser kalau pemain pindah)
-const REQ_TALI = 0.07;           // tinggi angkat kaki minimum, proporsi tinggi badan (bahu–kaki)
-const KARET_LEVELS = [0.06, 0.09, 0.12, 0.15, 0.18, 0.21];
-const KARET_ROUND = 5;
-
 // ---------- State ----------
-const S = { mode: 'tali', input: 'camera', phase: 'menu', now: 0, start: 0, lobbyAt: 0 };
+// input: server (kamera → Flask) | browser (kamera → MediaPipe di browser) | demo
+const S = { mode: 'tali', input: 'server', phase: 'menu', now: 0, start: 0, lobbyAt: 0, game: 0 };
 // phase: menu | lobby | play | over
 let players = [], numCounter = 0, fx = [], flash = 0;
 let T, K, B, events = [];
@@ -163,26 +32,27 @@ let T, K, B, events = [];
 const elapsed = () => S.now - S.start;
 const active = () => players.filter(p => p.confirmed);
 const alive = () => active().filter(p => p.lives > 0);
+const isCamera = () => S.input !== 'demo';
 
-// ---------- Kamera + MediaPipe ----------
-let landmarker = null, lastVideoTime = -1, camReady = false;
+// ---------- Kamera + pose ----------
+const browserPose = new BrowserPose(), server = new ServerPose();
+let camReady = false;
 async function initCamera() {
   const status = $('#status');
-  status.textContent = 'Menyalakan kamera…';
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-  video.srcObject = stream;
-  await video.play();
-  status.textContent = 'Memuat model pose (MediaPipe)…';
-  const { PoseLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
-  const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-  const opts = (delegate) => ({
-    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate },
-    runningMode: 'VIDEO', numPoses: MAX_POSES,
-    minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
-  });
-  try { landmarker = await PoseLandmarker.createFromOptions(fileset, opts('GPU')); }
-  catch (e) { landmarker = await PoseLandmarker.createFromOptions(fileset, opts('CPU')); }
-  camReady = true;
+  if (!camReady) {
+    status.textContent = 'Menyalakan kamera…';
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    await video.play();
+    camReady = true;
+  }
+  if (S.input === 'server' && !server.ready) {
+    status.textContent = 'Menghubungkan ke server Flask…';
+    await server.connect();
+  }
+  if (S.input === 'browser' && !browserPose.ready) {
+    status.textContent = 'Memuat model pose (MediaPipe di browser)…';
+    await browserPose.init();
+  }
   status.textContent = '';
 }
 
@@ -194,51 +64,39 @@ function videoRect() {
 }
 
 function updateCamera(nowMs) {
-  if (!landmarker || video.readyState < 2 || video.currentTime === lastVideoTime) return;
-  lastVideoTime = video.currentTime;
-  const res = landmarker.detectForVideo(video, nowMs);
-  const r = videoRect(), dets = [];
-  for (const raw of res.landmarks || []) {
-    const lm = raw.map(p => ({ x: W - (r.dx + p.x * r.dw), y: r.dy + p.y * r.dh, v: p.visibility ?? 1 }));
-    const ls = lm[11], rs = lm[12], lh = lm[23], rh = lm[24], la = lm[27], ra = lm[28];
-    const ok = la.v > 0.5 && ra.v > 0.5 && ls.v > 0.5 && rs.v > 0.5 && la.y < H - 2 && ra.y < H - 2;
-    dets.push({ lm, ok, x: (lh.x + rh.x) / 2, foot: Math.max(la.y, ra.y), hip: (lh.y + rh.y) / 2, sh: (ls.y + rs.y) / 2 });
+  if (S.input === 'server') {
+    server.pump(video, { t: S.now, phase: S.phase, req: S.mode === 'karet' && K.round ? K.round.h : null });
+    return;
   }
-  assign(dets);
+  const raws = browserPose.detect(video, nowMs);
+  if (!raws) return;
+  const r = videoRect();
+  players = assign(players, raws.map(raw => makeDetection(raw, r, W, H)), S.now, S.phase, newPlayer, confirm);
 }
 
-// Pelacakan identitas pemain antar-frame: pasangkan deteksi ke pemain terdekat (posisi pinggul)
-function assign(dets) {
-  const pairs = [];
-  players.forEach((p, i) => dets.forEach((d, j) => {
-    const dist = Math.abs(p.x - d.x);
-    if (dist < Math.max(60, p.bodyH * 0.6)) pairs.push([dist, i, j]);
-  }));
-  pairs.sort((a, b) => a[0] - b[0]);
-  const usedP = new Set(), usedD = new Set();
-  for (const [, i, j] of pairs) {
-    if (usedP.has(i) || usedD.has(j)) continue;
-    usedP.add(i); usedD.add(j); feed(players[i], dets[j]);
+// Balasan server (koordinat piksel frame) → pemain di koordinat layar
+server.onState = (st) => {
+  const r = videoRect(), sc = r.dw / st.w;
+  const X = x => W - (r.dx + x * sc), Y = y => r.dy + y * sc;
+  const seen = new Set();
+  for (const s of st.players) {
+    let p = players.find(q => q.sid === s.id);
+    if (!p) { p = newPlayer({ x: X(s.x), foot: Y(s.foot), hip: Y(s.hip), sh: Y(s.sh), lm: null }); p.sid = s.id; players.push(p); }
+    seen.add(s.id);
+    p.x = X(s.x); p.footY = Y(s.foot); p.hipY = Y(s.hip); p.shoulderY = Y(s.sh);
+    p.ground = s.ground == null ? null : Y(s.ground);
+    p.bodyH = s.body_h * sc; p.lift = s.lift * sc; p.hipLift = s.hip_lift * sc;
+    p.visible = s.visible; p.seenAt = S.now;
+    p.lm = s.lm && s.lm.map(([x, y, v]) => ({ x: X(x), y: Y(y), v }));
+    p.jump = s.jump; p.jumpT = s.jump_t; p.jumpReq = st.req;
+    if (s.confirmed && !p.confirmed) confirm(p);
   }
-  players.forEach((p, i) => { if (!usedP.has(i)) { p.visible = false; p.lm = null; } });
-  dets.forEach((d, j) => { if (!usedD.has(j) && d.ok && players.length < 12) players.push(newPlayer(d)); });
-  // buang deteksi palsu yang belum terkonfirmasi, dan pemain lobby yang sudah pergi
-  players = players.filter(p => p.confirmed ? (S.phase === 'play' || S.now - p.seenAt < 3) : S.now - p.seenAt < 0.6);
-}
+  players = players.filter(p => seen.has(p.sid));
+};
+
 function newPlayer(d) {
-  return { confirmed: false, num: 0, color: '#94a3b8', x: d.x, footY: d.foot, hipY: d.hip, shoulderY: d.sh, lm: d.lm,
-           seenAt: S.now, frames: 1, visible: true, hist: [], bodyH: Math.max(40, d.foot - d.sh), ground: null,
-           lift: 0, hipLift: 0, score: 0, lives: LIVES, joinedAt: S.now, karetOk: false, karetSeen: false, bot: null, plan: null };
-}
-function feed(p, d) {
-  p.lm = d.lm; p.visible = d.ok;
-  if (!d.ok) return;
-  p.x = p.x * 0.5 + d.x * 0.5;
-  p.seenAt = S.now; p.frames++;
-  if (!p.confirmed && p.frames >= 12) confirm(p);
-  p.footY = p.footY * 0.5 + d.foot * 0.5;   // perhalusan ringan agar titik kaki tidak bergetar
-  p.hipY = p.hipY * 0.5 + d.hip * 0.5;
-  p.shoulderY = d.sh;
+  return { ...newTrack(d, S.now), num: 0, color: '#94a3b8', score: 0, lives: LIVES, joinedAt: S.now,
+           karetOk: false, karetSeen: false, bot: null, plan: null, sid: null, jump: false, jumpT: null, jumpReq: null };
 }
 function confirm(p) {
   p.confirmed = true; p.num = ++numCounter; p.color = COLORS[(p.num - 1) % COLORS.length];
@@ -247,27 +105,16 @@ function confirm(p) {
   renderBoard();
 }
 
-// Riwayat gerak per pemain → hitung lantai, tinggi angkat kaki & pinggul
-function track(p) {
-  if (!p.visible) return;
-  const t = S.now;
-  p.hist.push({ t, foot: p.footY, hip: p.hipY, lift: 0, hipLift: 0 });
-  while (p.hist.length && p.hist[0].t < t - 3) p.hist.shift();
-  let gF = -Infinity, gH = -Infinity;
-  for (const h of p.hist) if (h.t >= t - GROUND_WIN) { gF = Math.max(gF, h.foot); gH = Math.max(gH, h.hip); }
-  p.ground = gF; p.lift = gF - p.footY; p.hipLift = gH - p.hipY;
-  if (p.lift < 0.03 * p.bodyH) p.bodyH += ((p.footY - p.shoulderY) - p.bodyH) * 0.05;
-  const last = p.hist[p.hist.length - 1]; last.lift = p.lift; last.hipLift = p.hipLift;
+// Penilaian lompatan: di server (Python) untuk mode server, langsung di browser untuk mode lain
+function judge(p, t, req, cb) {
+  if (S.input !== 'server') return cb(cleared(p, t, req));
+  const game = S.game;
+  server.judge(p.sid, t, req, r => { if (S.game === game && S.phase === 'play') cb(r); });
 }
-// Lompatan sah = kedua kaki DAN pinggul ikut naik (bukan sekadar angkat satu kaki / titik bergetar)
-const isJump = (h, reqFrac, bodyH) => h.lift >= reqFrac * bodyH && h.hipLift >= 0.5 * reqFrac * bodyH;
-function cleared(p, t, reqFrac) {
-  let n = 0, ok = false;
-  for (const h of p.hist) {
-    if (h.t < t - PRE || h.t > t + POST) continue;
-    n++; if (isJump(h, reqFrac, p.bodyH)) ok = true;
-  }
-  return n >= 3 ? ok : null;   // null = pemain tidak terlihat saat itu → tidak dinilai
+function jumpedSince(p, req, since) {
+  if (S.input === 'server') return p.jump && p.jumpReq === req && p.jumpT >= since;
+  const last = p.hist[p.hist.length - 1];
+  return !!last && last.t >= since && isJump(last, req, p.bodyH);
 }
 const eligible = (p, t) => p.confirmed && p.lives > 0 && p.joinedAt < t - 1.5;
 
@@ -307,11 +154,13 @@ function botThink(p) {
 // ---------- Alur permainan ----------
 function startGame() {
   S.now = performance.now() / 1000;
+  S.game++; server.reset();
   fx = []; events = []; numCounter = 0; players = [];
   T = { period: 2.2, cycleStart: S.now - 1.1 };
   K = { level: 0, rounds: 0, round: null, nextAt: 0 };
   B = { stones: [], nextSpawn: 0 };
   $('#menu').classList.add('hidden'); $('#over').classList.add('hidden'); $('#hud').classList.remove('hidden');
+  $('#hNet').classList.toggle('hidden', S.input !== 'server');
   if (S.input === 'demo') { setupDemo(); beginPlay(); }
   else { S.phase = 'lobby'; S.lobbyAt = 0; }
   renderBoard(); updateHud();
@@ -348,6 +197,7 @@ function fail(p) {
   renderBoard();
   if (active().length && !alive().length) setTimeout(() => S.phase === 'play' && gameOver(), 700);
 }
+const verdict = p => r => { if (r === true) pass(p); else if (r === false) fail(p); };
 function addFx(text, color, x, y) { fx.push({ text, color, x, y, t: 0 }); }
 
 function updateHud() {
@@ -357,6 +207,7 @@ function updateHud() {
   $('#hLevel').textContent = S.phase !== 'play' ? 'Persiapan'
     : S.mode === 'karet' ? `Karet Level ${K.level + 1}/${KARET_LEVELS.length}`
     : S.mode === 'tali' ? `Putaran ${T.period.toFixed(2)} dtk` : `Batu Level ${lvl}`;
+  if (S.input === 'server') $('#hNet').textContent = server.ready ? `🐍 Flask ${Math.round(server.rtt)} ms` : '🐍 Flask terputus';
 }
 let boardKey = '';
 function renderBoard() {
@@ -379,13 +230,9 @@ function updateMode() {
       T.cycleStart = hit; T.period = Math.max(0.95, T.period * 0.97);   // makin lama makin cepat
     }
     for (const e of events) {
-      if (S.now < e.t + POST) continue;
+      if (S.now < e.t + CFG.post) continue;
       e.done = true;
-      for (const p of active()) {
-        if (!eligible(p, e.t)) continue;
-        const r = cleared(p, e.t, e.req);
-        if (r === true) pass(p); else if (r === false) fail(p);
-      }
+      for (const p of active()) if (eligible(p, e.t)) judge(p, e.t, e.req, verdict(p));
     }
     events = events.filter(e => !e.done);
   }
@@ -400,8 +247,7 @@ function updateMode() {
       for (const p of active()) {
         if (!eligible(p, R.start) || p.karetOk || !p.visible) continue;
         p.karetSeen = true;
-        const last = p.hist[p.hist.length - 1];
-        if (last && last.t >= R.start && isJump(last, R.h, p.bodyH)) { p.karetOk = true; pass(p); }
+        if (jumpedSince(p, R.h, R.start)) { p.karetOk = true; pass(p); }
       }
       const waiting = active().filter(p => eligible(p, R.start) && p.karetSeen && !p.karetOk);
       if (S.now >= R.end || (S.now > R.start + 0.8 && !waiting.length && active().some(p => p.karetOk))) {
@@ -428,11 +274,12 @@ function updateMode() {
       for (const p of active()) {
         if (s.done.has(p)) continue;
         const tp = stoneTime(s, p);
-        if (S.now < tp + POST) continue;
+        if (S.now < tp + CFG.post) continue;
         s.done.add(p);
         if (!eligible(p, tp)) continue;
-        const r = cleared(p, tp, s.hFrac);
-        if (r === true) { pass(p); s.res.set(p, 'ok'); } else if (r === false) { fail(p); s.res.set(p, 'bad'); }
+        judge(p, tp, s.hFrac, r => {
+          if (r === true) { pass(p); s.res.set(p, 'ok'); } else if (r === false) { fail(p); s.res.set(p, 'bad'); }
+        });
       }
     }
     B.stones = B.stones.filter(s => stoneX(s) > -W * 0.3);
@@ -445,11 +292,13 @@ function loop(nowMs) {
   const dt = Math.min(0.05, (nowMs - lastT) / 1000); lastT = nowMs;
   S.now = nowMs / 1000;
   if (S.phase !== 'menu') {
-    if (S.input === 'camera') updateCamera(nowMs); else updateDemo(dt);
-    for (const p of players) track(p);
+    if (isCamera()) updateCamera(nowMs); else updateDemo(dt);
+    if (S.input !== 'server') for (const p of players) track(p, S.now);   // mode server: dilacak di Python
     const msg = $('#msg');
 
-    if (S.phase === 'lobby') {
+    if (S.input === 'server' && !server.ready && S.phase !== 'over') {
+      msg.textContent = 'Koneksi ke server Flask terputus. Jalankan "python app.py", lalu kembali ke Menu';
+    } else if (S.phase === 'lobby') {
       const ready = active().filter(p => p.visible);
       if (!ready.length) { S.lobbyAt = 0; msg.textContent = 'Masuk ke frame (1–6 orang). Pastikan seluruh badan sampai KAKI terlihat'; }
       else {
@@ -460,7 +309,7 @@ function loop(nowMs) {
       }
     } else if (S.phase === 'play') {
       const anyVisible = alive().some(p => p.visible);
-      msg.textContent = S.input === 'camera' && !anyVisible ? 'Tidak ada pemain terlihat — masuk ke frame sampai kaki terlihat' : '';
+      msg.textContent = isCamera() && !anyVisible ? 'Tidak ada pemain terlihat — masuk ke frame sampai kaki terlihat' : '';
       updateMode();
     }
     renderBoard(); updateHud();
@@ -506,7 +355,7 @@ function measureOverlay() {
 function draw(dt) {
   ctx.clearRect(0, 0, W, H);
   measureOverlay();
-  if (S.input === 'camera' && camReady && S.phase !== 'menu') {
+  if (isCamera() && camReady && S.phase !== 'menu') {
     const r = videoRect();
     ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
     ctx.drawImage(video, r.dx, r.dy, r.dw, r.dh);
@@ -521,7 +370,7 @@ function draw(dt) {
   const R = refs();
   const playing = S.phase === 'play' || S.phase === 'over';
   if (playing && S.mode === 'tali') drawRope(R, false);
-  for (const p of players) { if (S.input === 'camera') drawSkeleton(p); else drawStickman(p); }
+  for (const p of players) { if (isCamera()) drawSkeleton(p); else drawStickman(p); }
   if (playing) {
     if (S.mode === 'tali') drawRope(R, true);
     if (S.mode === 'karet') drawKaret(R);
@@ -706,9 +555,15 @@ document.querySelectorAll('#inputSeg button').forEach(b => b.onclick = () => {
   b.classList.add('sel'); S.input = b.dataset.input;
 });
 $('#startBtn').onclick = async () => {
-  if (S.input === 'camera' && !camReady) {
+  if (isCamera()) {
     try { await initCamera(); }
-    catch (e) { console.error(e); $('#status').textContent = 'Kamera/model gagal dimuat (' + (e.name || e.message) + '). Coba izinkan kamera, atau pakai mode Demo.'; return; }
+    catch (e) {
+      console.error(e);
+      $('#status').textContent = S.input === 'server' && camReady
+        ? 'Server Flask tidak terhubung. Jalankan "python app.py", atau pilih Kamera · browser.'
+        : 'Kamera/model gagal dimuat (' + (e.name || e.message) + '). Coba izinkan kamera, atau pakai mode Demo.';
+      return;
+    }
   }
   startGame();
 };
@@ -726,6 +581,3 @@ addEventListener('keydown', e => {
 cv.addEventListener('pointerdown', humanJump);
 
 requestAnimationFrame(loop);
-</script>
-</body>
-</html>

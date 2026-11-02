@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LOMPAT! – Filter Lompat Tradisional</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<video id="video" playsinline muted></video>
+<canvas id="cv"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="pill" id="hMode"></div>
+  <div class="pill" id="hPlayers"></div>
+  <div class="pill" id="hLevel"></div>
+  <div class="pill hidden" id="hNet"></div>
+  <div class="grow"></div>
+  <div class="pill" style="pointer-events:auto;cursor:pointer" id="hMenu">☰ Menu<span class="kb"> (Esc)</span></div>
+</div>
+<div id="board"></div>
+<div id="msg"></div>
+
+<div id="menu" class="overlay">
+  <div class="panel">
+    <h1>LOMPAT<span>!</span></h1>
+    <p class="sub">Filter kamera berbasis <b>computer vision</b> untuk permainan lompat tradisional Indonesia, bisa <b>dimainkan beramai-ramai (hingga 6 orang)</b>.
+      Berdiri di depan kamera, sistem mendeteksi kaki dan badan setiap pemain. Melompatlah saat objek virtual lewat:
+      <b style="color:var(--ok)">lolos = skor +1</b>, <b style="color:var(--bad)">kena = nyawa −1</b>.</p>
+    <div class="cards" id="cards">
+      <button class="card sel" data-mode="tali">
+        <div class="ic">🪢</div><h3>Lompat Tali</h3>
+        <p>Dimainkan di banyak daerah: dua orang memutar tali, pemain melompat setiap kali tali lewat di bawah kaki.</p>
+        <div class="rule">Tali virtual berputar melewati kaki semua pemain dan makin cepat. Lompat saat tali sampai di kaki (lingkaran mengecil = aba-aba).</div>
+      </button>
+      <button class="card" data-mode="karet">
+        <div class="ic">🎗️</div><h3>Lompat Karet</h3>
+        <p>Tali dari rangkaian karet gelang yang tingginya dinaikkan bertahap (mata kaki, lutut, pinggang, dst.).</p>
+        <div class="rule">Setiap ronde ada waktu 5 detik untuk melompati karet. Karet naik level setiap 2 ronde.</div>
+      </button>
+      <button class="card" data-mode="batu">
+        <div class="ic">🪨</div><h3>Lompat Batu</h3>
+        <p>Terinspirasi <i>Hombo Batu</i> (Fahombo) dari Nias, Sumatera Utara: pemuda melompati tumpukan batu setinggi ±2 meter.</p>
+        <div class="rule">Tumpukan batu datang dari samping, makin lama makin besar dan makin kencang.</div>
+      </button>
+    </div>
+    <div class="row">
+      <div class="seg" id="inputSeg">
+        <button class="sel" data-input="server">📷 Kamera<span class="kb"> · server Flask</span></button>
+        <button data-input="browser">🌐 Kamera<span class="kb"> · browser</span></button>
+        <button data-input="demo">🎮 Demo<span class="kb"> (kamu + 2 bot)</span></button>
+      </div>
+      <button class="btn" id="startBtn">Mulai ▶</button>
+      <span id="status"></span>
+    </div>
+    <p class="note">Tips kamera: taruh laptop/HP rendah, mundur ±2–4 meter sampai <b>seluruh badan sampai kaki</b> semua pemain terlihat, beri jarak antarpemain, dan pastikan ruangan terang.
+      Pemain baru boleh masuk frame kapan saja. Mode demo: <b>tap layar</b> (atau tekan Spasi di laptop) untuk melompat sebagai P1.</p>
+    <p class="note">Teknologi: MediaPipe Pose Landmarker (33 titik tubuh per orang, hingga 6 orang).
+      <b>Server Flask</b>: frame kamera diproses Python di laptop ini (pelacakan pemain & penilaian lompatan juga di server).
+      <b>Browser</b>: cadangan, semua diproses di browser tanpa server.</p>
+  </div>
+</div>
+
+<div id="over" class="overlay hidden">
+  <div class="panel center">
+    <div style="font-size:30px;font-weight:800">🏆 Permainan selesai</div>
+    <div class="sub" id="oInfo" style="margin:6px 0 0"></div>
+    <div id="rank"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="againBtn">Main lagi</button>
+      <button class="btn ghost" id="menuBtn">Pilih mode</button>
+    </div>
+  </div>
+</div>
+
+<script>window.LOMPAT_CONFIG = {{ client_config | tojson }};</script>
+<script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

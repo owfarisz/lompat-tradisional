@@ -1,0 +1,53 @@
+:root { --bg:#0f1115; --card:#1a1d24; --line:#2c313b; --text:#f3f4f6; --muted:#9aa3b2; --acc:#f59e0b; --ok:#22c55e; --bad:#ef4444; }
+* { box-sizing:border-box; }
+html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
+/* video tetap "terlihat" (bukan display:none) agar Safari iOS terus memperbarui frame-nya */
+#video { position:fixed; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; }
+#cv { position:fixed; inset:0; display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
+#hud { position:fixed; top:max(12px, env(safe-area-inset-top)); left:max(12px, env(safe-area-inset-left)); right:max(12px, env(safe-area-inset-right)); display:flex; gap:10px; align-items:center; pointer-events:none; flex-wrap:wrap; }
+.pill { background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-weight:700; font-size:16px; backdrop-filter:blur(4px); }
+#hud .grow { flex:1; }
+#board { position:fixed; top:64px; right:12px; background:rgba(15,17,21,.75); border:1px solid var(--line); border-radius:14px; padding:10px 12px; min-width:170px; pointer-events:none; font-size:15px; }
+#board:empty { display:none; }
+#board .r { display:flex; gap:8px; align-items:center; padding:3px 0; font-weight:700; }
+#board .r.dead { opacity:.4; text-decoration:line-through; }
+#board .dot { width:12px; height:12px; border-radius:50%; flex:none; }
+#board .sc { margin-left:auto; }
+#msg { position:fixed; left:50%; top:16%; transform:translateX(-50%); text-align:center; font-size:22px; font-weight:700; background:rgba(15,17,21,.8); border:1px solid var(--line); padding:12px 20px; border-radius:14px; max-width:90vw; pointer-events:none; }
+#msg:empty { display:none; }
+/* margin:auto (bukan align-items:center) supaya menu yang lebih tinggi dari layar HP tetap bisa di-scroll dari atas */
+.overlay { position:fixed; inset:0; background:rgba(10,11,14,.92); display:flex; padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); overflow:auto; -webkit-overflow-scrolling:touch; }
+.hidden { display:none !important; }
+.panel { width:min(980px,100%); margin:auto; }
+h1 { font-size:44px; margin:0 0 4px; letter-spacing:1px; }
+h1 span { color:var(--acc); }
+.sub { color:var(--muted); margin:0 0 22px; font-size:16px; line-height:1.5; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.card { background:var(--card); border:2px solid var(--line); border-radius:16px; padding:16px; cursor:pointer; text-align:left; color:var(--text); font:inherit; }
+.card.sel { border-color:var(--acc); box-shadow:0 0 0 3px rgba(245,158,11,.2); }
+.card .ic { font-size:34px; }
+.card h3 { margin:6px 0 6px; font-size:19px; }
+.card p { margin:0; color:var(--muted); font-size:14px; line-height:1.45; }
+.card .rule { margin-top:8px; color:var(--text); font-size:13px; }
+.row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:20px; }
+.seg { display:flex; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.seg button { background:none; border:0; color:var(--muted); padding:12px 16px; font:inherit; font-weight:600; cursor:pointer; }
+.seg button.sel { background:var(--acc); color:#111; }
+.btn { background:var(--acc); color:#111; border:0; border-radius:12px; padding:13px 26px; font:inherit; font-weight:800; font-size:17px; cursor:pointer; }
+.btn.ghost { background:none; color:var(--text); border:1px solid var(--line); }
+.note { color:var(--muted); font-size:13px; margin-top:14px; line-height:1.5; }
+#status { color:var(--acc); font-weight:600; }
+.center { text-align:center; }
+#rank { margin:16px auto 6px; max-width:420px; text-align:left; }
+#rank .r { display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:18px; font-weight:700; }
+#rank .dot { width:14px; height:14px; border-radius:50%; }
+#rank .sc { margin-left:auto; font-size:22px; }
+@media (max-width:600px){
+  h1{font-size:32px;} .sub{font-size:15px;}
+  #hud{gap:6px;} .pill{font-size:12px;padding:5px 9px;} .kb{display:none;}
+  #msg{font-size:15px;padding:10px 14px;}
+  #board{font-size:12px;min-width:0;padding:6px 9px;right:max(8px, env(safe-area-inset-right));}
+  .seg{width:100%;} .seg button{flex:1;padding:12px 8px;font-size:14px;}
+  .btn{width:100%;} .row{gap:10px;}
+  #rank .r{font-size:16px;}
+}

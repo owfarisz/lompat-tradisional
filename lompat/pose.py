@@ -1,18 +1,15 @@
-"""Estimasi pose dengan MediaPipe Pose Landmarker (Python)."""
+"""Estimasi pose dengan YOLO-pose (Ultralytics), 17 titik COCO."""
 import io
 import urllib.request
 
-import mediapipe as mp
 import numpy as np
-from mediapipe.tasks import python as mp_tasks
-from mediapipe.tasks.python import vision
 from PIL import Image
 
 from . import config as C
 
 
-def ensure_model(path=C.MODEL_PATH, url=C.MODEL_URL):
-    """Unduh model sekali (±5,8 MB) kalau belum ada di folder models/."""
+def ensure_model(path=C.BASE_MODEL_PATH, url=C.BASE_MODEL_URL):
+    """Unduh model dasar sekali (±6 MB) kalau belum ada di folder models/."""
     if path.exists():
         return path
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -28,30 +25,36 @@ def decode_jpeg(data):
     return np.asarray(Image.open(io.BytesIO(data)).convert('RGB'))
 
 
+def load_yolo(path=None):
+    from ultralytics import YOLO           # impor lambat: torch berat, tes logika tidak membutuhkannya
+    path = path or C.model_path()
+    if path == C.BASE_MODEL_PATH:
+        ensure_model()
+    return YOLO(str(path))
+
+
+def keypoints_to_poses(kpts):
+    """Tensor/array (N × 17 × 3) → daftar pose; tiap pose = 17 × (x, y, keyakinan) dalam piksel."""
+    if kpts is None:
+        return []
+    arr = kpts.cpu().numpy() if hasattr(kpts, 'cpu') else np.asarray(kpts)
+    return [[(float(x), float(y), float(c)) for x, y, c in pose[:, :3]] for pose in arr]
+
+
 class PoseEstimator:
-    """Satu instance per koneksi: mode VIDEO menyimpan status pelacakan antar-frame."""
+    """Satu instance per koneksi. YOLO mendeteksi per frame, tanpa status antar-frame."""
 
-    def __init__(self, model_path=C.MODEL_PATH):
-        options = vision.PoseLandmarkerOptions(
-            base_options=mp_tasks.BaseOptions(model_asset_path=str(model_path)),
-            running_mode=vision.RunningMode.VIDEO,
-            num_poses=C.MAX_POSES,
-            min_pose_detection_confidence=C.MIN_CONFIDENCE,
-            min_pose_presence_confidence=C.MIN_CONFIDENCE,
-            min_tracking_confidence=C.MIN_CONFIDENCE,
-        )
-        self._landmarker = vision.PoseLandmarker.create_from_options(options)
-        self._last_ts = -1
+    def __init__(self, model_path=None):
+        self._model = load_yolo(model_path)
 
-    def detect(self, rgb, t):
-        """Kembalikan daftar pose; tiap pose = 33 × (x, y, visibility) dalam piksel frame."""
-        ts = max(self._last_ts + 1, int(t * 1000))   # MediaPipe mewajibkan timestamp yang terus naik
-        self._last_ts = ts
-        h, w = rgb.shape[:2]
-        image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
-        result = self._landmarker.detect_for_video(image, ts)
-        return [[(p.x * w, p.y * h, 1.0 if p.visibility is None else p.visibility) for p in pose]
-                for pose in result.pose_landmarks]
+    def detect(self, rgb, t=None):
+        """Kembalikan daftar pose; tiap pose = 17 × (x, y, keyakinan) dalam piksel frame."""
+        bgr = np.ascontiguousarray(rgb[:, :, ::-1])   # Ultralytics menganggap array numpy berformat BGR
+        result = self._model.predict(bgr, imgsz=C.IMGSZ, conf=C.DETECT_CONF, max_det=C.MAX_POSES,
+                                     classes=[0], verbose=False)[0]
+        if result.keypoints is None:
+            return []
+        return keypoints_to_poses(result.keypoints.data)
 
     def close(self):
-        self._landmarker.close()
+        self._model = None

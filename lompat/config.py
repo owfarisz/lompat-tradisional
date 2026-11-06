@@ -3,21 +3,26 @@
 Satu sumber untuk Python (server) dan JavaScript (mode browser/demo): nilai di
 CLIENT dikirim ke halaman lewat template, jadi kedua sisi selalu sama.
 """
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ---------- Model MediaPipe ----------
-MODEL_URL = ('https://storage.googleapis.com/mediapipe-models/pose_landmarker/'
-             'pose_landmarker_lite/float16/1/pose_landmarker_lite.task')
-MODEL_PATH = BASE_DIR / 'models' / 'pose_landmarker_lite.task'
+# ---------- Model pose ----------
+# Server: YOLO-pose (Ultralytics, 17 titik COCO). Hasil fine-tuning (python -m lompat.finetune train)
+# disimpan di FINETUNED_MODEL_PATH dan otomatis dipakai kalau ada. LOMPAT_POSE_MODEL=path menimpa keduanya.
+BASE_MODEL_URL = 'https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n-pose.pt'
+BASE_MODEL_PATH = BASE_DIR / 'models' / 'yolo11n-pose.pt'
+FINETUNED_MODEL_PATH = BASE_DIR / 'models' / 'pose-finetuned.pt'
+DETECT_CONF = 0.35            # ambang keyakinan kotak orang dari YOLO
+IMGSZ = 640                   # ukuran input YOLO (sama dengan FRAME_MAX)
 MAX_POSES = 6
-MIN_CONFIDENCE = 0.5          # deteksi, kehadiran & pelacakan pose
+MIN_CONFIDENCE = 0.5          # mode browser (MediaPipe JS): deteksi, kehadiran & pelacakan pose
 FRAME_MAX = 640               # sisi terpanjang frame yang dikirim browser ke server (px)
 JPEG_QUALITY = 0.7
 
 # ---------- Pelacakan pemain ----------
-VIS_MIN = 0.5                 # visibility minimum bahu & pergelangan kaki agar pemain dianggap terlihat
+VIS_MIN = 0.5                 # visibility / keyakinan titik minimum bahu & pergelangan kaki agar pemain dianggap terlihat
 CONFIRM_FRAMES = 12           # pemain baru dikonfirmasi setelah terlihat 12 frame (menyaring deteksi palsu)
 MAX_TRACKED = 12              # batas kandidat pemain yang dilacak sekaligus
 SMOOTH = 0.5                  # perhalusan posisi kaki/pinggul antar-frame
@@ -35,6 +40,15 @@ HIP_RATIO = 0.5               # pinggul wajib naik minimal 50% dari syarat tingg
 MIN_SAMPLES = 3               # minimal sampel di jendela penilaian, kalau kurang → tidak dinilai
 STILL_FRAC = 0.03             # saat kaki di lantai (angkat < 3%), tinggi badan disesuaikan pelan-pelan
 BODY_ADAPT = 0.05
+
+
+
+def model_path():
+    """Bobot YOLO-pose yang dipakai server: env > hasil fine-tuning > model dasar."""
+    if os.environ.get('LOMPAT_POSE_MODEL'):
+        return Path(os.environ['LOMPAT_POSE_MODEL'])
+    return FINETUNED_MODEL_PATH if FINETUNED_MODEL_PATH.exists() else BASE_MODEL_PATH
+
 
 CLIENT = {
     'maxPoses': MAX_POSES, 'minConfidence': MIN_CONFIDENCE,

@@ -12,14 +12,13 @@ FPS = 30
 
 
 def pose(x, foot, body_h=200, left_foot=None, hip_drop=0.0, vis=0.9):
-    """33 landmark sederhana: bahu, pinggul, pergelangan kaki; sisanya di pinggul."""
+    """17 keypoint COCO sederhana: bahu, pinggul, pergelangan kaki; sisanya di pinggul."""
     sh, hip = foot - body_h, foot - body_h / 2 - hip_drop
-    lm = [(x, hip, vis)] * 33
-    lm = list(lm)
-    lm[11], lm[12] = (x - 20, sh, vis), (x + 20, sh, vis)
-    lm[23], lm[24] = (x - 12, hip, vis), (x + 12, hip, vis)
-    lm[27] = (x - 10, foot if left_foot is None else left_foot, vis)
-    lm[28] = (x + 10, foot, vis)
+    lm = [(x, hip, vis)] * 17
+    lm[5], lm[6] = (x - 20, sh, vis), (x + 20, sh, vis)
+    lm[11], lm[12] = (x - 12, hip, vis), (x + 12, hip, vis)
+    lm[15] = (x - 10, foot if left_foot is None else left_foot, vis)
+    lm[16] = (x + 10, foot, vis)
     return lm
 
 

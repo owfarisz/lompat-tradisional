@@ -6,7 +6,6 @@ import argparse
 import json
 import logging
 
-import mediapipe as mp
 from flask import Flask, jsonify, render_template
 from flask_sock import Sock
 
@@ -26,8 +25,9 @@ def index():
 
 @app.get('/api/health')
 def health():
-    return jsonify(ok=True, mediapipe=mp.__version__, model=C.MODEL_PATH.name,
-                   model_ready=C.MODEL_PATH.exists(), max_poses=C.MAX_POSES)
+    path = C.model_path()
+    return jsonify(ok=True, model=path.name, finetuned=path == C.FINETUNED_MODEL_PATH,
+                   model_ready=path.exists(), max_poses=C.MAX_POSES)
 
 
 @sock.route('/ws/pose')

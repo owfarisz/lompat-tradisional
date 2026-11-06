@@ -319,7 +319,13 @@ function loop(nowMs) {
 }
 
 // ---------- Gambar ----------
-const BONES = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,29],[28,30],[29,31],[30,32],[27,31],[28,32]];
+// kerangka per format titik: MediaPipe 33 (mode browser) atau COCO 17 (YOLO-pose di server)
+const SKELETON = {
+  33: { bones: [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,29],[28,30],[29,31],[30,32],[27,31],[28,32]],
+        legs: [23, 24, 25, 26, 27, 28], ankles: [27, 28] },
+  17: { bones: [[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]],
+        legs: [11, 12, 13, 14, 15, 16], ankles: [15, 16] },
+};
 
 // lantai & tinggi badan di posisi x mana pun (interpolasi antarpemain) → objek pas di kaki tiap pemain
 function refs() { return active().filter(p => p.visible && p.ground != null).sort((a, b) => a.x - b.x); }
@@ -392,19 +398,21 @@ function draw(dt) {
 }
 
 function drawSkeleton(p) {
-  if (!p.lm) return;
+  const sk = p.lm && SKELETON[p.lm.length];
+  if (!sk) return;
   const col = p.confirmed ? p.color : 'rgba(148,163,184,.7)';
   ctx.globalAlpha = p.lives > 0 ? 1 : 0.35;
   ctx.lineWidth = 4; ctx.strokeStyle = col; ctx.lineCap = 'round';
-  for (const [a, b] of BONES) {
+  for (const [a, b] of sk.bones) {
     const u = p.lm[a], v = p.lm[b];
     if (u.v < 0.4 || v.v < 0.4) continue;
     ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(v.x, v.y); ctx.stroke();
   }
-  for (const i of [23, 24, 25, 26, 27, 28]) {          // pinggul, lutut, pergelangan kaki
+  for (const i of sk.legs) {                           // pinggul, lutut, pergelangan kaki
     const u = p.lm[i]; if (u.v < 0.4) continue;
-    ctx.fillStyle = i >= 27 ? '#fff' : col;
-    ctx.beginPath(); ctx.arc(u.x, u.y, i >= 27 ? 8 : 6, 0, Math.PI * 2); ctx.fill();
+    const ankle = sk.ankles.includes(i);
+    ctx.fillStyle = ankle ? '#fff' : col;
+    ctx.beginPath(); ctx.arc(u.x, u.y, ankle ? 8 : 6, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
 }

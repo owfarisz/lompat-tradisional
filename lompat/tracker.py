@@ -9,13 +9,12 @@ from dataclasses import dataclass
 
 from . import config as C
 
-# indeks landmark MediaPipe Pose
-L_SH, R_SH, L_HIP, R_HIP, L_ANK, R_ANK = 11, 12, 23, 24, 27, 28
+from .keypoints import L_ANK, L_HIP, L_SH, R_ANK, R_HIP, R_SH
 
 
 @dataclass
 class Detection:
-    lm: list          # 33 × (x, y, visibility)
+    lm: list          # 17 × (x, y, keyakinan), urutan COCO
     ok: bool          # bahu & kedua pergelangan kaki terlihat, kaki tidak terpotong tepi bawah
     x: float          # tengah pinggul
     foot: float       # kaki TERENDAH → kedua kaki harus terangkat agar dihitung melompat
